@@ -1,0 +1,13 @@
+[package]
+name = "bytepair-core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[dependencies]
+fancy-regex = "0.13"
+rustc-hash = "2"
+rayon = "1.10"
+
+[dev-dependencies]
+proptest = "1"

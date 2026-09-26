@@ -1,0 +1,13 @@
+[package]
+name = "bytepair-py"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[lib]
+name = "_core"
+crate-type = ["cdylib"]
+
+[dependencies]
+bytepair-core = { path = "../bytepair-core" }
+pyo3 = { version = "0.22", features = ["generate-import-lib"] }

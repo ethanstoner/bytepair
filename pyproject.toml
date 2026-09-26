@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
+requires = ["maturin>=1.7,<2"]
+build-backend = "maturin"
 
 [project]
 name = "bytepair"
@@ -11,13 +11,16 @@ dependencies = ["regex"]
 
 [project.optional-dependencies]
 tiktoken = ["tiktoken"]
-dev = ["tiktoken", "tokenizers", "pytest"]
+dev = ["tiktoken", "tokenizers", "pytest", "maturin"]
 
 [project.scripts]
 bytepair = "bytepair.cli:main"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.maturin]
+manifest-path = "crates/bytepair-py/Cargo.toml"
+python-source = "src"
+module-name = "bytepair._core"
+features = ["pyo3/extension-module"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
