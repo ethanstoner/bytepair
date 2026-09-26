@@ -60,6 +60,9 @@ pub struct Encoder {
     specials: Vec<(String, u32)>, // insertion order = alternation order
     special_ids: FxHashMap<u32, String>,
     splitter: Splitter,
+    /// Tokens whose own bytes BPE back to exactly that token: a chunk equal to one of these
+    /// can skip merging. Verified per token at build time, so the shortcut never changes output.
+    whole: FxHashMap<Box<[u8]>, u32>,
     cache: Mutex<Cache>,
 }
 
@@ -134,6 +137,16 @@ impl Encoder {
         specials: Vec<(String, u32)>,
     ) -> Result<Self, Error> {
         let special_ids = specials.iter().map(|(s, i)| (*i, s.clone())).collect();
+        let whole = vocab
+            .par_iter()
+            .enumerate()
+            .filter(|(_, t)| t.len() > 1)
+            .filter_map(|(id, t)| {
+                let mut ids: Vec<u32> = t.iter().map(|&b| byte_rank[b as usize]).collect();
+                bpe::merge(&mut ids, &ranks);
+                (ids == [id as u32]).then(|| (t.clone().into_boxed_slice(), id as u32))
+            })
+            .collect();
         Ok(Encoder {
             ranks,
             byte_rank,
@@ -141,6 +154,7 @@ impl Encoder {
             specials,
             special_ids,
             splitter: Splitter::for_pattern(pattern)?,
+            whole,
             cache: Mutex::new(Cache::default()),
         })
     }
@@ -161,7 +175,12 @@ impl Encoder {
 
     fn encode_with(&self, cache: &mut Cache, text: &str, out: &mut Vec<u32>) -> Result<(), Error> {
         self.splitter.for_each(text, |chunk| {
-            if let Some(ids) = cache.get(chunk) {
+            let bytes = chunk.as_bytes();
+            if bytes.len() == 1 {
+                out.push(self.byte_rank[bytes[0] as usize]);
+            } else if let Some(&id) = self.whole.get(bytes) {
+                out.push(id);
+            } else if let Some(ids) = cache.get(chunk) {
                 out.extend_from_slice(ids);
             } else {
                 let ids = self.encode_chunk(chunk);
