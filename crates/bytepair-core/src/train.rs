@@ -34,13 +34,11 @@ fn replace(ids: &[u32], a: u32, b: u32, new_id: u32) -> Vec<u32> {
     out
 }
 
-/// Overlapping pair counts within one chunk (`aaa` counts `(a, a)` twice).
-fn local_counts(ids: &[u32]) -> FxHashMap<u64, i64> {
-    let mut m = FxHashMap::default();
-    for w in ids.windows(2) {
-        *m.entry(key(w[0], w[1])).or_insert(0) += 1;
-    }
-    m
+/// The chunk's pairs, overlapping (`aaa` yields `(a, a)` twice), sorted into `buf`.
+fn sorted_pairs(ids: &[u32], buf: &mut Vec<u64>) {
+    buf.clear();
+    buf.extend(ids.windows(2).map(|w| key(w[0], w[1])));
+    buf.sort_unstable();
 }
 
 /// Learn up to `num_merges` merges from `{chunk bytes: frequency}`. Merge `i` gets id `256 + i`.
@@ -94,6 +92,7 @@ pub fn train_chunks(chunks: &FxHashMap<Vec<u8>, u64>, num_merges: usize) -> Vec<
         let (a, b) = unkey(pair);
         let new_id = 256 + step as u32;
         touched.clear();
+        let (mut before, mut after) = (Vec::new(), Vec::new());
 
         for idx in index.remove(&pair).unwrap_or_default() {
             let old = &words[idx as usize];
@@ -102,20 +101,32 @@ pub fn train_chunks(chunks: &FxHashMap<Vec<u8>, u64>, num_merges: usize) -> Vec<
                 continue; // stale index entry
             }
             let freq = freqs[idx as usize];
-            let before = local_counts(old);
-            let after = local_counts(&new);
-            for (&p, &n) in &before {
-                let delta = after.get(&p).copied().unwrap_or(0) - n;
-                if delta != 0 {
-                    *counts.get_mut(&p).expect("counted pair") += delta * freq;
-                    touched.insert(p);
+            // Walk both sorted pair lists together; only pairs whose count changed matter.
+            sorted_pairs(old, &mut before);
+            sorted_pairs(&new, &mut after);
+            let (mut i, mut j) = (0, 0);
+            while i < before.len() || j < after.len() {
+                let p = match (before.get(i), after.get(j)) {
+                    (Some(&x), Some(&y)) => x.min(y),
+                    (Some(&x), None) => x,
+                    (None, Some(&y)) => y,
+                    (None, None) => unreachable!(),
+                };
+                let (mut nb, mut na) = (0i64, 0i64);
+                while before.get(i) == Some(&p) {
+                    nb += 1;
+                    i += 1;
                 }
-            }
-            for (&p, &n) in &after {
-                if !before.contains_key(&p) {
-                    *counts.entry(p).or_insert(0) += n * freq;
-                    index.entry(p).or_default().insert(idx);
+                while after.get(j) == Some(&p) {
+                    na += 1;
+                    j += 1;
+                }
+                if na != nb {
+                    *counts.entry(p).or_insert(0) += (na - nb) * freq;
                     touched.insert(p);
+                    if nb == 0 {
+                        index.entry(p).or_default().insert(idx);
+                    }
                 }
             }
             words[idx as usize] = new;
