@@ -124,3 +124,27 @@ def test_encode_batch_matches_single(sample_text):
     lines = sample_text.splitlines(keepends=True)[:2000]
     ref = tiktoken.get_encoding("cl100k_base")
     assert enc.encode_batch(lines) == [ref.encode_ordinary(line) for line in lines]
+
+
+@pytest.mark.parametrize("pattern", [GPT4_PATTERN, O200K_PATTERN, GPT2_PATTERN, None])
+def test_rust_trainer_matches_python(pattern, sample_text):
+    from bytepair import ByteTokenizer, SplitTokenizer
+
+    def make(backend):
+        return ByteTokenizer(backend) if pattern is None else SplitTokenizer(pattern, backend)
+
+    text = sample_text[:60_000] if pattern else sample_text[:8_000]
+    assert make("rust").train(text, 700).merges == make("python").train(text, 700).merges
+
+
+def test_rust_trainer_matches_python_on_random_unicode():
+    import random
+
+    from bytepair import SplitTokenizer
+
+    rng = random.Random(3)
+    alphabet = "abcAB é中文 ʰ́ 123 '!\n\t😀"
+    for _ in range(10):
+        text = "".join(rng.choice(alphabet) for _ in range(rng.randint(50, 800)))
+        n = 256 + rng.randint(1, 80)
+        assert SplitTokenizer(backend="rust").train(text, n).merges == SplitTokenizer(backend="python").train(text, n).merges

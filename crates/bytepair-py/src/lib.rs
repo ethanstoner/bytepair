@@ -23,6 +23,14 @@ fn split(pattern: &str, text: &str, force_regex: bool) -> PyResult<Vec<String>> 
     Ok(pieces.into_iter().map(String::from).collect())
 }
 
+/// Learn merges from `text` (split with `pattern`, or whole when None) up to `vocab_size`.
+#[pyfunction]
+#[pyo3(signature = (text, pattern, vocab_size))]
+fn train(py: Python<'_>, text: &str, pattern: Option<String>, vocab_size: usize) -> PyResult<Vec<(u32, u32)>> {
+    py.allow_threads(|| bytepair_core::train::train_from_text(text, pattern.as_deref(), vocab_size))
+        .map_err(value_error)
+}
+
 #[pyclass(frozen, module = "bytepair._core")]
 struct Encoder {
     inner: encoder::Encoder,
@@ -119,6 +127,7 @@ fn _core(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("CL100K_PATTERN", bytepair_core::pretokenize::CL100K_PATTERN)?;
     m.add("O200K_PATTERN", bytepair_core::pretokenize::O200K_PATTERN)?;
     m.add_function(wrap_pyfunction!(split, m)?)?;
+    m.add_function(wrap_pyfunction!(train, m)?)?;
     m.add_class::<Encoder>()?;
     Ok(())
 }

@@ -6,3 +6,4 @@ pub mod chars;
 pub mod pretokenize;
 pub mod bpe;
 pub mod encoder;
+pub mod train;

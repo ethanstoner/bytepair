@@ -88,13 +88,24 @@ class Tokenizer:
     def train(self, text, vocab_size, trainer="incremental", verbose=False):
         if vocab_size < 256:
             raise ValueError("vocab_size must be at least 256")
+        if self.backend == "rust" and trainer == "incremental":
+            try:
+                merge_list = _backend._core.train(text, self.pattern, vocab_size)
+            except ValueError:
+                if self._requested_backend != "auto":
+                    raise
+                self.backend = "python"  # pattern the Rust regex engine cannot compile
+            else:
+                return self._finish_training(merge_list, verbose)
         pieces = self._split.findall(text) if self._split else [text]
         chunks = {}
         for piece in pieces:
             key = tuple(piece.encode("utf-8"))
             chunks[key] = chunks.get(key, 0) + 1
-        merge_list = TRAINERS[trainer](chunks, vocab_size - 256)
-        self._set_merges(merge_list)
+        return self._finish_training(TRAINERS[trainer](chunks, vocab_size - 256), verbose)
+
+    def _finish_training(self, merge_list, verbose):
+        self._set_merges([tuple(p) for p in merge_list])
         if verbose:
             for pair, new_id in self.merges.items():
                 print(f"merge {pair} -> {new_id} [{render_token(self.vocab[new_id])}]")
