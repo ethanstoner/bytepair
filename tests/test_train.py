@@ -17,23 +17,26 @@ SAMPLES = [
 ]
 
 
-def test_wikipedia_example():
+def test_wikipedia_example(backend):
     # https://en.wikipedia.org/wiki/Byte_pair_encoding: "aaabdaaabac" -> "XdXac"
-    tok = ByteTokenizer().train("aaabdaaabac", 256 + 3)
+    tok = ByteTokenizer(backend).train("aaabdaaabac", 256 + 3)
     ids = tok.encode("aaabdaaabac")
     assert ids == [258, 100, 258, 97, 99]
     assert tok.decode(ids) == "aaabdaaabac"
 
 
-@pytest.mark.parametrize("make", [ByteTokenizer, SplitTokenizer, lambda: SplitTokenizer(GPT2_PATTERN)])
-def test_round_trip(make, sample_text):
-    tok = make().train(sample_text, 256 + 200)
+@pytest.mark.parametrize(
+    "make",
+    [ByteTokenizer, lambda b: SplitTokenizer(backend=b), lambda b: SplitTokenizer(GPT2_PATTERN, b)],
+)
+def test_round_trip(make, backend, sample_text):
+    tok = make(backend).train(sample_text, 256 + 200)
     for text in SAMPLES + [sample_text[:20_000]]:
         assert tok.decode(tok.encode(text, allowed_special="none")) == text
 
 
-def test_training_compresses(sample_text):
-    tok = SplitTokenizer().train(sample_text, 512)
+def test_training_compresses(backend, sample_text):
+    tok = SplitTokenizer(backend=backend).train(sample_text, 512)
     ids = tok.encode(sample_text)
     assert len(ids) < 0.6 * len(sample_text.encode("utf-8"))
 
@@ -57,16 +60,16 @@ def test_trainers_agree_on_random_bytes():
         assert naive(chunks, 30) == incremental(chunks, 30)
 
 
-def test_training_stops_when_nothing_left_to_merge():
-    tok = ByteTokenizer().train("ab", 1000)
+def test_training_stops_when_nothing_left_to_merge(backend):
+    tok = ByteTokenizer(backend).train("ab", 1000)
     assert len(tok.merges) == 1
 
 
-def test_save_load_round_trip(tmp_path, sample_text):
-    tok = SplitTokenizer().train(sample_text, 400)
+def test_save_load_round_trip(tmp_path, backend, sample_text):
+    tok = SplitTokenizer(backend=backend).train(sample_text, 400)
     tok.register_special_tokens({"<|endoftext|>": 400})
     tok.save(tmp_path / "tok")
-    loaded = Tokenizer.load(tmp_path / "tok.model")
+    loaded = Tokenizer.load(tmp_path / "tok.model", backend)
     assert loaded.merges == tok.merges
     assert loaded.pattern == tok.pattern
     for text in SAMPLES:
@@ -75,16 +78,16 @@ def test_save_load_round_trip(tmp_path, sample_text):
     assert "<special <|endoftext|>> 400" in vocab
 
 
-def test_save_load_byte_tokenizer(tmp_path):
-    tok = ByteTokenizer().train("the cat sat on the mat " * 20, 270)
+def test_save_load_byte_tokenizer(tmp_path, backend):
+    tok = ByteTokenizer(backend).train("the cat sat on the mat " * 20, 270)
     tok.save(tmp_path / "b")
-    loaded = Tokenizer.load(tmp_path / "b.model")
+    loaded = Tokenizer.load(tmp_path / "b.model", backend)
     assert isinstance(loaded, ByteTokenizer)
     assert loaded.encode("the mat") == tok.encode("the mat")
 
 
-def test_special_token_modes():
-    tok = SplitTokenizer().train("hello world " * 50, 280)
+def test_special_token_modes(backend):
+    tok = SplitTokenizer(backend=backend).train("hello world " * 50, 280)
     tok.register_special_tokens({"<|eot|>": 1000})
     text = "hello<|eot|>world"
     assert 1000 in tok.encode(text, allowed_special="all")
@@ -96,7 +99,7 @@ def test_special_token_modes():
 
 
 def test_fast_chunk_encoder_matches_simple(sample_text):
-    tok = ByteTokenizer().train(sample_text[:30_000], 600)
+    tok = ByteTokenizer("python").train(sample_text[:30_000], 600)
     rng = random.Random(2)
     pieces = [sample_text[i : i + rng.randint(0, 300)] for i in range(0, 30_000, 97)]
     pieces += ["aaaaaaa", "ab" * 50, "", "x"]

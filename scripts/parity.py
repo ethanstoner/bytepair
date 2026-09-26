@@ -34,33 +34,37 @@ def main(names=("cl100k_base", "o200k_base")):
     report = {"corpus_bytes": total_bytes, "encodings": {}}
 
     for name in names:
-        ours = TiktokenTokenizer(name)
+        backends = {b: TiktokenTokenizer(name, backend=b) for b in ("rust", "python")}
         ref = tiktoken.get_encoding(name)
         rows = {}
-        tokens = mismatches = 0
+        tokens = 0
+        mismatches = dict.fromkeys(backends, 0)
         for stem, text in texts.items():
-            a = ours.encode(text, allowed_special="none")
             b = ref.encode(text, disallowed_special=())
-            same = a == b
-            round_trip = ours.decode(a) == text
-            if not same:
-                i = first_diff(a, b)
-                print(f"  MISMATCH {name} {stem} at token {i}: {a[i:i+5]} vs {b[i:i+5]}")
-            mismatches += (not same) + (not round_trip)
+            status = {}
+            for backend, ours in backends.items():
+                a = ours.encode(text, allowed_special="none")
+                same = a == b
+                round_trip = ours.decode(a) == text
+                if not same:
+                    i = first_diff(a, b)
+                    print(f"  MISMATCH {name} {backend} {stem} at token {i}: {a[i:i+5]} vs {b[i:i+5]}")
+                mismatches[backend] += (not same) + (not round_trip)
+                status[backend] = same and round_trip
             tokens += len(b)
             nbytes = len(text.encode("utf-8"))
             rows[stem] = {"bytes": nbytes, "tokens": len(b), "bytes_per_token": round(nbytes / len(b), 3),
-                          "identical": same, "round_trip": round_trip}
+                          "identical": status}
             print(f"{name:12} {stem:28} {len(b):>9,} tokens  {nbytes / len(b):5.2f} B/tok  "
-                  f"{'ok' if same and round_trip else 'FAIL'}", flush=True)
+                  + "  ".join(f"{k}:{'ok' if v else 'FAIL'}" for k, v in status.items()), flush=True)
         report["encodings"][name] = {"tokens": tokens, "mismatches": mismatches,
                                      "bytes_per_token": round(total_bytes / tokens, 3), "files": rows}
-        print(f"{name}: {tokens:,} tokens over {total_bytes / 1e6:.1f} MB, {mismatches} mismatches\n")
+        print(f"{name}: {tokens:,} tokens over {total_bytes / 1e6:.1f} MB, mismatches {mismatches}\n")
 
     report["measured_at"] = time.strftime("%Y-%m-%d")
     (ROOT / "docs").mkdir(exist_ok=True)
     (ROOT / "docs" / "parity.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
-    return 1 if any(e["mismatches"] for e in report["encodings"].values()) else 0
+    return 1 if any(any(e["mismatches"].values()) for e in report["encodings"].values()) else 0
 
 
 if __name__ == "__main__":

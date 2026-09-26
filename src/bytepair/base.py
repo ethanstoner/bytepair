@@ -4,6 +4,7 @@ import json
 
 import regex
 
+from . import _backend
 from .core import render_token, replace_pair
 from .trainers import TRAINERS
 
@@ -13,14 +14,51 @@ _INF = float("inf")
 
 
 class Tokenizer:
-    def __init__(self, pattern=None):
+    """backend: "rust" (the bytepair._core extension), "python" (this file, the readable
+    reference) or "auto" (rust when the extension is built, else python). Both give
+    identical output."""
+
+    def __init__(self, pattern=None, backend="auto"):
         self.pattern = pattern
-        self._split = regex.compile(pattern) if pattern else None
+        try:
+            self._split = regex.compile(pattern) if pattern else None
+        except regex.error as e:
+            raise ValueError(f"bad pattern: {e}") from None
+        self._requested_backend = backend
+        self.backend = _backend.resolve(backend)
+        self._rust = None
         self.merges = {}  # (id, id) -> new id, in learned order
         self.special_tokens = {}  # str -> id
         self._special_ids = {}  # id -> str
         self.vocab = self._build_vocab()
         self._cache = {}
+
+    # ---- backend ----------------------------------------------------------
+
+    def _make_rust(self):
+        return _backend._core.Encoder.from_merges(
+            list(self.merges), self.pattern, list(self.special_tokens.items())
+        )
+
+    def _engine(self):
+        """The Rust encoder, built on first use; None when running the Python backend."""
+        if self.backend != "rust":
+            return None
+        if self._rust is None:
+            try:
+                self._rust = self._make_rust()
+            except ValueError:
+                # e.g. a custom pattern the Rust regex engine cannot compile
+                if self._requested_backend != "auto":
+                    raise
+                self.backend = "python"
+                return None
+        return self._rust
+
+    def clear_cache(self):
+        self._cache = {}
+        if self._rust is not None:
+            self._rust.clear_cache()
 
     # ---- vocabulary -------------------------------------------------------
 
@@ -34,10 +72,12 @@ class Tokenizer:
         self.merges = {pair: first_id + i for i, pair in enumerate(merge_list)}
         self.vocab = self._build_vocab()
         self._cache = {}
+        self._rust = None
 
     def register_special_tokens(self, specials):
         self.special_tokens = dict(specials)
         self._special_ids = {i: s for s, i in self.special_tokens.items()}
+        self._rust = None
 
     @property
     def vocab_size(self):
@@ -105,6 +145,9 @@ class Tokenizer:
 
     def encode_ordinary(self, text):
         """Encode text, treating special-token strings as plain text."""
+        rust = self._engine()
+        if rust is not None:
+            return rust.encode_ordinary(text)
         chunks = self._split.findall(text) if self._split else [text]
         out = []
         cache = self._cache
@@ -124,6 +167,11 @@ class Tokenizer:
         "none_raise" (error if any special string appears, tiktoken's default)
         or a set of special-token strings to honour.
         """
+        rust = self._engine()
+        if rust is not None:
+            if isinstance(allowed_special, (set, frozenset, list, tuple)):
+                allowed_special = list(allowed_special)
+            return rust.encode(text, allowed_special)
         if allowed_special == "all":
             allowed = self.special_tokens
         elif allowed_special == "none":
@@ -134,7 +182,11 @@ class Tokenizer:
                     raise ValueError(f"text contains special token {s!r}")
             allowed = {}
         elif isinstance(allowed_special, (set, frozenset, list, tuple)):
-            allowed = {s: self.special_tokens[s] for s in allowed_special}
+            unknown = [s for s in allowed_special if s not in self.special_tokens]
+            if unknown:
+                raise ValueError(f"unknown special token {unknown[0]!r}")
+            # Registration order, not the caller's set order, decides ties between specials.
+            allowed = {s: i for s, i in self.special_tokens.items() if s in allowed_special}
         else:
             raise ValueError(f"bad allowed_special: {allowed_special!r}")
 
@@ -152,6 +204,9 @@ class Tokenizer:
     # ---- decoding ---------------------------------------------------------
 
     def decode(self, ids):
+        rust = self._engine()
+        if rust is not None:
+            return rust.decode(list(ids))
         specials = self._special_ids
         parts = []
         for i in ids:
@@ -189,7 +244,7 @@ class Tokenizer:
                 f.write(f"<special {s}> {i}\n")
 
     @classmethod
-    def load(cls, path):
+    def load(cls, path, backend="auto"):
         with open(path, encoding="utf-8") as f:
             header = f.readline().rstrip("\n")
             if header != FORMAT:
@@ -199,7 +254,7 @@ class Tokenizer:
             merge_list = [tuple(map(int, line.split())) for line in f if line.strip()]
         from .tokenizers import ByteTokenizer, SplitTokenizer
 
-        tok = ByteTokenizer() if pattern is None else SplitTokenizer(pattern)
+        tok = ByteTokenizer(backend) if pattern is None else SplitTokenizer(pattern, backend)
         tok._set_merges(merge_list)
         tok.register_special_tokens(specials)
         return tok

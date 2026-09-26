@@ -3,7 +3,7 @@
 import pytest
 import tiktoken
 
-from bytepair import Cl100kTokenizer, O200kTokenizer
+from bytepair import Cl100kTokenizer, O200kTokenizer, _backend
 
 CASES = [
     "",
@@ -25,10 +25,20 @@ CASES = [
 ]
 
 
-@pytest.fixture(scope="module", params=[(Cl100kTokenizer, "cl100k_base"), (O200kTokenizer, "o200k_base")])
+@pytest.fixture(
+    scope="module",
+    params=[
+        (cls, name, backend)
+        for cls, name in [(Cl100kTokenizer, "cl100k_base"), (O200kTokenizer, "o200k_base")]
+        for backend in ["python", "rust"]
+    ],
+    ids=lambda p: f"{p[1]}-{p[2]}",
+)
 def pair(request):
-    cls, name = request.param
-    return cls(), tiktoken.get_encoding(name)
+    cls, name, backend = request.param
+    if backend == "rust" and _backend._core is None:
+        pytest.skip("bytepair._core not built")
+    return cls(backend), tiktoken.get_encoding(name)
 
 
 @pytest.mark.parametrize("text", CASES)

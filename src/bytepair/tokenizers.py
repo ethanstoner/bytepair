@@ -1,5 +1,6 @@
 """Concrete tokenizers."""
 
+from . import _backend
 from .base import Tokenizer
 
 # Split patterns from OpenAI's GPT-2 and cl100k_base (GPT-4) tokenizers.
@@ -9,15 +10,15 @@ GPT4_PATTERN = r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}++|\p{N}{1,3}+|
 class ByteTokenizer(Tokenizer):
     """BPE straight over the UTF-8 bytes of the whole text."""
 
-    def __init__(self):
-        super().__init__(pattern=None)
+    def __init__(self, backend="auto"):
+        super().__init__(pattern=None, backend=backend)
 
 
 class SplitTokenizer(Tokenizer):
     """Regex-split the text first so merges never cross word/number/space boundaries."""
 
-    def __init__(self, pattern=GPT4_PATTERN):
-        super().__init__(pattern=pattern)
+    def __init__(self, pattern=GPT4_PATTERN, backend="auto"):
+        super().__init__(pattern=pattern, backend=backend)
 
 
 def _bpe_parts(ranks, token, max_rank):
@@ -43,13 +44,18 @@ class TiktokenTokenizer(SplitTokenizer):
     have shuffled ranks, so raw bytes are mapped through that permutation first.
     """
 
-    def __init__(self, name):
+    def __init__(self, name, backend="auto"):
         import tiktoken
 
         enc = tiktoken.get_encoding(name)
-        super().__init__(enc._pat_str)
+        super().__init__(enc._pat_str, backend)
         self.name = name
         ranks = enc._mergeable_ranks
+        self._ranks = ranks
+        self.vocab = {rank: token for token, rank in ranks.items()}
+        self.register_special_tokens(enc._special_tokens)
+        if self.backend == "rust":
+            return  # the extension rebuilds the merge tree itself, in parallel
         merges = {}
         for token, rank in ranks.items():
             if len(token) == 1:
@@ -60,8 +66,11 @@ class TiktokenTokenizer(SplitTokenizer):
             merges[(ranks[parts[0]], ranks[parts[1]])] = rank
         self.merges = dict(sorted(merges.items(), key=lambda kv: kv[1]))
         self._byte_rank = [ranks[bytes([i])] for i in range(256)]
-        self.vocab = {rank: token for token, rank in ranks.items()}
-        self.register_special_tokens(enc._special_tokens)
+
+    def _make_rust(self):
+        return _backend._core.Encoder.from_ranks(
+            list(self._ranks.items()), self.pattern, list(self.special_tokens.items())
+        )
 
     def _byte_ids(self, raw):
         return [self._byte_rank[b] for b in raw]
@@ -71,10 +80,10 @@ class TiktokenTokenizer(SplitTokenizer):
 
 
 class Cl100kTokenizer(TiktokenTokenizer):
-    def __init__(self):
-        super().__init__("cl100k_base")
+    def __init__(self, backend="auto"):
+        super().__init__("cl100k_base", backend)
 
 
 class O200kTokenizer(TiktokenTokenizer):
-    def __init__(self):
-        super().__init__("o200k_base")
+    def __init__(self, backend="auto"):
+        super().__init__("o200k_base", backend)

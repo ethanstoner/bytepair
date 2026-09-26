@@ -12,11 +12,11 @@ from .tokenizers import GPT2_PATTERN, GPT4_PATTERN, ByteTokenizer, SplitTokenize
 PATTERNS = {"gpt4": GPT4_PATTERN, "gpt2": GPT2_PATTERN}
 
 
-def load_tokenizer(spec):
+def load_tokenizer(spec, backend="auto"):
     """A saved `.model` path, or the name of a tiktoken encoding (cl100k_base, o200k_base)."""
     if spec.endswith(".model"):
-        return Tokenizer.load(spec)
-    return TiktokenTokenizer(spec)
+        return Tokenizer.load(spec, backend)
+    return TiktokenTokenizer(spec, backend)
 
 
 def read_text(args):
@@ -29,7 +29,10 @@ def read_text(args):
 
 def cmd_train(args):
     text = pathlib.Path(args.input).read_bytes().decode("utf-8")
-    tok = ByteTokenizer() if args.pattern == "none" else SplitTokenizer(PATTERNS[args.pattern])
+    if args.pattern == "none":
+        tok = ByteTokenizer(args.backend)
+    else:
+        tok = SplitTokenizer(PATTERNS[args.pattern], args.backend)
     t0 = time.perf_counter()
     tok.train(text, args.vocab_size, trainer=args.trainer)
     elapsed = time.perf_counter() - t0
@@ -41,13 +44,13 @@ def cmd_train(args):
 
 
 def cmd_encode(args):
-    tok = load_tokenizer(args.model)
+    tok = load_tokenizer(args.model, args.backend)
     ids = tok.encode(read_text(args), allowed_special="all" if args.allow_special else "none_raise")
     print(json.dumps(ids))
 
 
 def cmd_decode(args):
-    tok = load_tokenizer(args.model)
+    tok = load_tokenizer(args.model, args.backend)
     ids = json.loads(args.ids if args.ids is not None else sys.stdin.read())
     sys.stdout.write(tok.decode(ids))
 
@@ -56,6 +59,7 @@ def main(argv=None):
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(prog="bytepair")
+    parser.add_argument("--backend", choices=["auto", "rust", "python"], default="auto")
     sub = parser.add_subparsers(dest="command", required=True)
 
     p = sub.add_parser("train", help="learn merges from a text file")
