@@ -10,8 +10,8 @@ o200k_base:  3,391,387 tokens over 11.4 MB, 0 mismatches
 
 ### Highlights
 - **Byte-identical to tiktoken:** 7.46M tokens across 11.4 MB of English, German, French, Spanish, Chinese, Japanese, Python source and a 1.5 MB emoji/whitespace fuzz file, with **0 mismatches** and lossless decode on both encodings.
-- **205x faster training than minbpe** (0.30 s vs 61.5 s, vocab 1024 on 752 KB), and 24x faster than the textbook recount-every-merge loop, with identical merges.
-- **2.9-3.1x faster encoding** than the textbook per-chunk loop (4.9 MB/s cold, 13 MB/s warm on cl100k, single thread, pure Python).
+- **Over 200x faster training than minbpe** (0.25-0.26 s vs 85-99 s, vocab 1024 on 752 KB, 3 runs), and 24-33x faster than the textbook recount-every-merge loop, with identical merges.
+- **2.6-3.0x faster encoding** than the textbook per-chunk loop (4.6-5.0 MB/s cold, 12.4-13.1 MB/s warm on cl100k, single thread, pure Python, 3 runs).
 - **Found a real divergence:** HF `tokenizers` ports of cl100k/o200k differ from tiktoken on untrusted text, because they turn a literal `<|endoftext|>` typed by a user into the real control token.
 
 **Python · regex · tiktoken (reference) · HF tokenizers (reference) · pytest**
@@ -24,17 +24,17 @@ It follows Andrej Karpathy's [Let's build the GPT Tokenizer](https://www.youtube
 
 ## Results
 
-All numbers are from `scripts/parity.py` and `scripts/benchmark.py`, measured 2026-09-26 on an AMD Ryzen 9 9950X3D, Python 3.12, tiktoken 0.14.0, tokenizers 0.23.2, one thread. Raw output is in [`docs/parity.json`](docs/parity.json) and [`docs/benchmark.json`](docs/benchmark.json).
+All numbers are from `scripts/parity.py` and `scripts/benchmark.py`, measured 2026-09-26 on an AMD Ryzen 9 9950X3D, Python 3.12, tiktoken 0.14.0, tokenizers 0.23.2, one thread. Each cell is the min-max over 3 full benchmark runs (encode timings are each a median of 3). Raw output is in [`docs/parity.json`](docs/parity.json) and [`docs/benchmark.json`](docs/benchmark.json).
 
 ### Encode throughput (MB/s, 11.4 MB corpus)
 
 | | cl100k_base | o200k_base |
 |---|---:|---:|
-| tiktoken (Rust) | 19.5 | 27.1 |
-| **bytepair, warm chunk cache** | **13.0** | **10.5** |
-| **bytepair, cold** | **4.9** | **4.3** |
-| HF tokenizers, batch of lines, 1 thread | 3.1 | 3.2 |
-| bytepair, textbook merge loop, cold | 1.7 | 1.4 |
+| tiktoken (Rust) | 19.8-21.4 | 27.3-28.6 |
+| **bytepair, warm chunk cache** | **12.4-13.1** | **10.2-11.5** |
+| **bytepair, cold** | **4.6-5.0** | **4.1-4.3** |
+| HF tokenizers, batch of lines, 1 thread | 3.1-3.3 | 3.2-3.3 |
+| bytepair, textbook merge loop, cold | 1.7-1.8 | 1.5 |
 
 Every bytepair run asserts its output equals tiktoken's before its time counts. HF is slower than its reputation here only because it is pinned to one thread; its speed comes from parallel batches.
 
@@ -42,10 +42,12 @@ Every bytepair run asserts its output equals tiktoken's before its time counts. 
 
 | | 752 KB, vocab 1024 | 11.4 MB, vocab 8192 |
 |---|---:|---:|
-| HF tokenizers (Rust) | 0.16 s | 3.8 s |
-| **bytepair, incremental trainer** | **0.30 s** | **18.3 s** |
-| bytepair, naive trainer | 7.4 s | n/a |
-| minbpe `RegexTokenizer` | 61.5 s | n/a |
+| HF tokenizers (Rust) | 0.18-0.19 s | 4.2-4.4 s |
+| **bytepair, incremental trainer** | **0.25-0.26 s** | **19.6-25.1 s** |
+| bytepair, naive trainer | 8.0-8.5 s | n/a |
+| minbpe `RegexTokenizer` | 85-99 s | n/a |
+
+minbpe's time varies more between sessions than the others (an earlier session measured 61 s), but the ratio has stayed above 200x in every run.
 
 Both trained tokenizers compress their training text to 2.968 bytes/token at vocab 1024. At 8192, bytepair reaches 3.337 and HF 3.352; the gap comes from tie-breaking and counting differences between the trainers.
 
@@ -61,7 +63,7 @@ Both trained tokenizers compress their training text to 2.968 bytes/token at voc
 ## Engineering Highlights
 
 - **Recovered GPT-4's merge tree from a flat rank table.** tiktoken ships only `{token bytes: rank}`. Re-running BPE on each token with merges capped below its own rank splits it into exactly its two parents, which rebuilds all 100,000 cl100k merges in 0.5 s and all 199,742 o200k merges in 2.2 s, including tiktoken's shuffled single-byte ranks.
-- **Rank-array encoder:** the textbook loop rescans every pair and rebuilds the list on each merge. bytepair keeps adjacent-pair ranks in a list, merges the leftmost lowest-ranked pair and re-ranks only its two neighbours. It is 2.9x faster cold, and a test pins it to the textbook version.
+- **Rank-array encoder:** the textbook loop rescans every pair and rebuilds the list on each merge. bytepair keeps adjacent-pair ranks in a list, merges the leftmost lowest-ranked pair and re-ranks only its two neighbours. It is 2.6-3.0x faster cold, and a test pins it to the textbook version.
 - **Incremental trainer:** it deduplicates pre-split chunks by frequency, keeps running pair counts plus a pair-to-chunk index, and pops the best pair from a lazily invalidated heap. Each merge only re-counts chunks that contain the merged pair. Ties break on the smallest pair in both trainers, so the tests can require identical merge lists from the naive and incremental trainers.
 - **Verification that can fail:** as a negative control, deleting the single merge that forms `" the"` makes the parity check fail (36,071 vs 34,893 tokens on the sample). The fuzz corpus mixes ZWJ emoji, flags, skin tones, combining accents, CRLF and lone CR, NBSP/ideographic/zero-width spaces, digit runs and uppercase contractions.
 - **Special tokens handled like tiktoken:** `allowed_special` accepts `"all"`, `"none"`, `"none_raise"` (default, raises if a special string appears) or a set of strings. Delta-minimizing the HF divergence showed it comes entirely from added-token matching (`<|im_start|>`, `<|endoftext|>`, ...). With those strings removed, HF matches tiktoken exactly.
@@ -124,7 +126,7 @@ python scripts/benchmark.py           # docs/benchmark.json
 ## What I Learned
 
 - Tokenizer "correctness" is only meaningful against a reference. Two independent, well-used implementations (tiktoken and HF's ports) disagree on the same vocabulary, and the disagreement is a security-relevant one.
-- In pure Python, the win comes from changing the algorithm, not from micro-tuning: deduplicating chunks and updating only what changed beat recounting by 24x.
+- In pure Python, the win comes from changing the algorithm, not from micro-tuning: deduplicating chunks and updating only what changed beat recounting by 24-33x.
 - A merge's id is its rank, and any merge that uses it ranks later. That one invariant is what makes both the left-to-right encoder and the merge-tree recovery correct.
 
 ## License

@@ -84,7 +84,7 @@ def bench_encode(text, repeats):
         # The textbook per-chunk loop, for the before/after of the rank-array encoder.
         fast = ours._encode_chunk
         ours._encode_chunk = ours._encode_chunk_simple
-        s, ids = timed(cold, 1)
+        s, ids = timed(cold, repeats)
         ours._encode_chunk = fast
         assert ids == expected
         row["bytepair_textbook_loop_cold"] = mbps(s)
@@ -135,7 +135,7 @@ def bench_train(text, vocab_size, include_slow):
     return row
 
 
-def main():
+def main(runs=3):
     files = sorted(CORPUS.glob("*.txt"))
     if not files:
         sys.exit("no corpus; run scripts/fetch_corpus.py first")
@@ -149,15 +149,21 @@ def main():
         "tiktoken": tiktoken.__version__,
         "tokenizers": tokenizers.__version__,
         "corpus_bytes": len(text.encode("utf-8")),
-        "encode_mb_per_s": bench_encode(text, repeats=3),
-        "train": [
-            bench_train(pride, 1024, include_slow=True),
-            bench_train(text, 8192, include_slow=False),
-        ],
+        "runs": [],
     }
+    # Whole-suite repeats, because single runs drift between sessions; quote ranges.
+    for i in range(runs):
+        print(f"--- run {i + 1}/{runs}", flush=True)
+        report["runs"].append({
+            "encode_mb_per_s": bench_encode(text, repeats=3),
+            "train": [
+                bench_train(pride, 1024, include_slow=True),
+                bench_train(text, 8192, include_slow=False),
+            ],
+        })
     (ROOT / "docs").mkdir(exist_ok=True)
     (ROOT / "docs" / "benchmark.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":
-    main()
+    main(int(sys.argv[1]) if len(sys.argv) > 1 else 3)
