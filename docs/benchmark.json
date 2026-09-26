@@ -1,0 +1,44 @@
+{
+  "measured_at": "2026-09-26",
+  "cpu": "AMD Ryzen 9 9950X3D 16-Core Processor",
+  "python": "3.12.10",
+  "tiktoken": "0.14.0",
+  "tokenizers": "0.23.2",
+  "corpus_bytes": 11371133,
+  "encode_mb_per_s": {
+    "cl100k_base": {
+      "tiktoken": 19.5,
+      "hf_tokenizers_batch_of_lines": 3.1,
+      "bytepair_cold_cache": 4.87,
+      "bytepair_warm_cache": 13.0,
+      "bytepair_textbook_loop_cold": 1.66
+    },
+    "o200k_base": {
+      "tiktoken": 27.13,
+      "hf_tokenizers_batch_of_lines": 3.22,
+      "bytepair_cold_cache": 4.28,
+      "bytepair_warm_cache": 10.47,
+      "bytepair_textbook_loop_cold": 1.37
+    }
+  },
+  "train": [
+    {
+      "train_bytes": 752442,
+      "vocab_size": 1024,
+      "bytepair_incremental_s": 0.3,
+      "bytepair_bytes_per_token": 2.968,
+      "hf_tokenizers_s": 0.16,
+      "hf_bytes_per_token": 2.968,
+      "bytepair_naive_s": 7.36,
+      "minbpe_s": 61.54
+    },
+    {
+      "train_bytes": 11371133,
+      "vocab_size": 8192,
+      "bytepair_incremental_s": 18.32,
+      "bytepair_bytes_per_token": 3.337,
+      "hf_tokenizers_s": 3.84,
+      "hf_bytes_per_token": 3.352
+    }
+  ]
+}

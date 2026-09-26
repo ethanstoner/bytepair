@@ -9,6 +9,7 @@ so they learn identical merges.
 """
 
 import heapq
+from collections import Counter
 
 from .core import best_pair, pair_counts, replace_pair
 
@@ -62,13 +63,19 @@ def incremental(chunks, num_merges, first_id=256):
             if len(new) == len(old):
                 continue  # index entry was stale
             freq = freqs[idx]
-            for p in zip(old, old[1:]):
-                counts[p] -= freq
-                touched.add(p)
-            for p in zip(new, new[1:]):
-                counts[p] = counts.get(p, 0) + freq
-                where.setdefault(p, set()).add(idx)
-                touched.add(p)
+            # Only pairs whose count changed inside this word need updating.
+            before = Counter(zip(old, old[1:]))
+            after = Counter(zip(new, new[1:]))
+            for p, n in before.items():
+                delta = after.get(p, 0) - n
+                if delta:
+                    counts[p] += delta * freq
+                    touched.add(p)
+            for p, n in after.items():
+                if p not in before:
+                    counts[p] = counts.get(p, 0) + n * freq
+                    where.setdefault(p, set()).add(idx)
+                    touched.add(p)
             words[idx] = new
         for p in touched:
             c = counts[p]
