@@ -60,6 +60,7 @@ dependencies = [
  "fancy-regex",
  "proptest",
  "rayon",
+ "regex-syntax",
  "rustc-hash",
 ]
 

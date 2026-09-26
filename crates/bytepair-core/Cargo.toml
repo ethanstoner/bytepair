@@ -6,6 +6,7 @@ license = "MIT"
 
 [dependencies]
 fancy-regex = "0.13"
+regex-syntax = "0.8"
 rustc-hash = "2"
 rayon = "1.10"
 
