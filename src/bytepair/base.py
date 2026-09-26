@@ -8,6 +8,8 @@ from .core import render_token, replace_pair
 from .trainers import TRAINERS
 
 FORMAT = "bytepair v1"
+CACHE_LIMIT = 1_000_000  # distinct pre-split chunks remembered per tokenizer
+_INF = float("inf")
 
 
 class Tokenizer:
@@ -63,15 +65,42 @@ class Tokenizer:
     def _byte_ids(self, raw):
         return list(raw)
 
-    def _encode_chunk(self, raw):
+    def _encode_chunk_simple(self, raw):
+        """Textbook version: find the earliest-learned pair present, replace it everywhere, repeat."""
         ids = self._byte_ids(raw)
         merges = self.merges
         while len(ids) >= 2:
-            # Apply the earliest-learned merge present; later merges may depend on it.
             pair = min(zip(ids, ids[1:]), key=lambda p: merges.get(p, float("inf")))
             if pair not in merges:
                 break
             ids = replace_pair(ids, pair, merges[pair])
+        return ids
+
+    def _encode_chunk(self, raw):
+        """Same result as _encode_chunk_simple, without rescanning every pair per merge.
+
+        Keeps the rank of each adjacent pair in a list, merges the leftmost
+        lowest-ranked pair and re-ranks only its two neighbours. A merge id is
+        its rank, and any pair containing the new id ranks after it, so taking
+        occurrences one at a time left to right matches replacing them all at once.
+        """
+        ids = self._byte_ids(raw)
+        if len(ids) < 2:
+            return ids
+        get = self.merges.get
+        inf = _INF
+        ranks = [get(p, inf) for p in zip(ids, ids[1:])]
+        while ranks:
+            best = min(ranks)
+            if best == inf:
+                break
+            i = ranks.index(best)
+            ids[i : i + 2] = [best]
+            del ranks[i]
+            if i > 0:
+                ranks[i - 1] = get((ids[i - 1], best), inf)
+            if i < len(ranks):
+                ranks[i] = get((best, ids[i + 1]), inf)
         return ids
 
     def encode_ordinary(self, text):
@@ -83,7 +112,7 @@ class Tokenizer:
             ids = cache.get(chunk)
             if ids is None:
                 ids = self._encode_chunk(chunk.encode("utf-8"))
-                if len(cache) < 200_000:
+                if len(cache) < CACHE_LIMIT:
                     cache[chunk] = ids
             out.extend(ids)
         return out

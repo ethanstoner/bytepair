@@ -1,0 +1,174 @@
+{
+  "corpus_bytes": 11371133,
+  "encodings": {
+    "cl100k_base": {
+      "tokens": 4067838,
+      "mismatches": 0,
+      "bytes_per_token": 2.795,
+      "files": {
+        "code_python_stdlib": {
+          "bytes": 1668202,
+          "tokens": 383017,
+          "bytes_per_token": 4.355,
+          "identical": true,
+          "round_trip": true
+        },
+        "de_faust": {
+          "bytes": 198598,
+          "tokens": 61132,
+          "bytes_per_token": 3.249,
+          "identical": true,
+          "round_trip": true
+        },
+        "edge_cases": {
+          "bytes": 1486832,
+          "tokens": 794427,
+          "bytes_per_token": 1.872,
+          "identical": true,
+          "round_trip": true
+        },
+        "en_moby_dick": {
+          "bytes": 1256436,
+          "tokens": 308620,
+          "bytes_per_token": 4.071,
+          "identical": true,
+          "round_trip": true
+        },
+        "en_pride_and_prejudice": {
+          "bytes": 752442,
+          "tokens": 173057,
+          "bytes_per_token": 4.348,
+          "identical": true,
+          "round_trip": true
+        },
+        "es_don_quijote": {
+          "bytes": 2205980,
+          "tokens": 664428,
+          "bytes_per_token": 3.32,
+          "identical": true,
+          "round_trip": true
+        },
+        "fr_les_miserables_1": {
+          "bytes": 690622,
+          "tokens": 207003,
+          "bytes_per_token": 3.336,
+          "identical": true,
+          "round_trip": true
+        },
+        "ja_kasei_no_kioku": {
+          "bytes": 101981,
+          "tokens": 36705,
+          "bytes_per_token": 2.778,
+          "identical": true,
+          "round_trip": true
+        },
+        "ja_kessho_ki": {
+          "bytes": 347628,
+          "tokens": 132818,
+          "bytes_per_token": 2.617,
+          "identical": true,
+          "round_trip": true
+        },
+        "ja_rashomon": {
+          "bytes": 18702,
+          "tokens": 6990,
+          "bytes_per_token": 2.676,
+          "identical": true,
+          "round_trip": true
+        },
+        "zh_hongloumeng": {
+          "bytes": 2643710,
+          "tokens": 1299641,
+          "bytes_per_token": 2.034,
+          "identical": true,
+          "round_trip": true
+        }
+      }
+    },
+    "o200k_base": {
+      "tokens": 3391387,
+      "mismatches": 0,
+      "bytes_per_token": 3.353,
+      "files": {
+        "code_python_stdlib": {
+          "bytes": 1668202,
+          "tokens": 385367,
+          "bytes_per_token": 4.329,
+          "identical": true,
+          "round_trip": true
+        },
+        "de_faust": {
+          "bytes": 198598,
+          "tokens": 53902,
+          "bytes_per_token": 3.684,
+          "identical": true,
+          "round_trip": true
+        },
+        "edge_cases": {
+          "bytes": 1486832,
+          "tokens": 648729,
+          "bytes_per_token": 2.292,
+          "identical": true,
+          "round_trip": true
+        },
+        "en_moby_dick": {
+          "bytes": 1256436,
+          "tokens": 306497,
+          "bytes_per_token": 4.099,
+          "identical": true,
+          "round_trip": true
+        },
+        "en_pride_and_prejudice": {
+          "bytes": 752442,
+          "tokens": 171678,
+          "bytes_per_token": 4.383,
+          "identical": true,
+          "round_trip": true
+        },
+        "es_don_quijote": {
+          "bytes": 2205980,
+          "tokens": 592672,
+          "bytes_per_token": 3.722,
+          "identical": true,
+          "round_trip": true
+        },
+        "fr_les_miserables_1": {
+          "bytes": 690622,
+          "tokens": 182714,
+          "bytes_per_token": 3.78,
+          "identical": true,
+          "round_trip": true
+        },
+        "ja_kasei_no_kioku": {
+          "bytes": 101981,
+          "tokens": 27518,
+          "bytes_per_token": 3.706,
+          "identical": true,
+          "round_trip": true
+        },
+        "ja_kessho_ki": {
+          "bytes": 347628,
+          "tokens": 112990,
+          "bytes_per_token": 3.077,
+          "identical": true,
+          "round_trip": true
+        },
+        "ja_rashomon": {
+          "bytes": 18702,
+          "tokens": 5384,
+          "bytes_per_token": 3.474,
+          "identical": true,
+          "round_trip": true
+        },
+        "zh_hongloumeng": {
+          "bytes": 2643710,
+          "tokens": 903936,
+          "bytes_per_token": 2.925,
+          "identical": true,
+          "round_trip": true
+        }
+      }
+    }
+  },
+  "measured_at": "2026-09-26"
+}

@@ -93,3 +93,13 @@ def test_special_token_modes():
     with pytest.raises(ValueError):
         tok.encode(text)
     assert tok.decode(tok.encode(text, allowed_special="all")) == text
+
+
+def test_fast_chunk_encoder_matches_simple(sample_text):
+    tok = ByteTokenizer().train(sample_text[:30_000], 600)
+    rng = random.Random(2)
+    pieces = [sample_text[i : i + rng.randint(0, 300)] for i in range(0, 30_000, 97)]
+    pieces += ["aaaaaaa", "ab" * 50, "", "x"]
+    for piece in pieces:
+        raw = piece.encode("utf-8")
+        assert tok._encode_chunk(raw) == tok._encode_chunk_simple(raw)
