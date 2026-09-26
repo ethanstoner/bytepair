@@ -1,3 +1,6 @@
+// PyO3 0.22's #[pyfunction]/#[pymethods] expansion trips this lint on every PyResult.
+#![allow(clippy::useless_conversion)]
+
 use bytepair_core::encoder::{self, Allowed};
 use bytepair_core::pretokenize::Splitter;
 use pyo3::exceptions::PyValueError;

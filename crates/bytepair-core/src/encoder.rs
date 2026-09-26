@@ -7,7 +7,7 @@ use rayon::prelude::*;
 use rustc_hash::FxHashMap;
 
 use crate::bpe::{self, key, Ranks};
-use crate::pretokenize::Splitter;
+use crate::pretokenize::{RegexError, Splitter};
 
 /// Distinct chunks remembered by the shared cache (same limit as the Python reference).
 pub const CACHE_LIMIT: usize = 1_000_000;
@@ -16,7 +16,7 @@ type Cache = FxHashMap<Box<str>, Vec<u32>>;
 
 #[derive(Debug)]
 pub enum Error {
-    Regex(fancy_regex::Error),
+    Regex(RegexError),
     DisallowedSpecial(String),
     UnknownSpecial(String),
     UnknownId(u32),
@@ -37,8 +37,8 @@ impl fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
-impl From<fancy_regex::Error> for Error {
-    fn from(e: fancy_regex::Error) -> Self {
+impl From<RegexError> for Error {
+    fn from(e: RegexError) -> Self {
         Error::Regex(e)
     }
 }

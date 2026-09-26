@@ -8,6 +8,9 @@ mod o200k;
 
 use fancy_regex::Regex;
 
+/// fancy-regex errors are large; boxed so every `Result` here stays small.
+pub type RegexError = Box<fancy_regex::Error>;
+
 pub const CL100K_PATTERN: &str = r"'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}++|\p{N}{1,3}+| ?[^\s\p{L}\p{N}]++[\r\n]*+|\s++$|\s*[\r\n]|\s+(?!\S)|\s";
 pub const O200K_PATTERN: &str = r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]*[\p{Ll}\p{Lm}\p{Lo}\p{M}]+(?i:'s|'t|'re|'ve|'m|'ll|'d)?|[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]+[\p{Ll}\p{Lm}\p{Lo}\p{M}]*(?i:'s|'t|'re|'ve|'m|'ll|'d)?|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n/]*|\s*[\r\n]+|\s+(?!\S)|\s+";
 
@@ -22,7 +25,7 @@ pub enum Splitter {
 
 impl Splitter {
     /// The hand-written matcher when `pattern` is exactly a known pattern, else a regex.
-    pub fn for_pattern(pattern: Option<&str>) -> Result<Self, fancy_regex::Error> {
+    pub fn for_pattern(pattern: Option<&str>) -> Result<Self, RegexError> {
         Ok(match pattern {
             None => Splitter::Whole,
             Some(CL100K_PATTERN) => Splitter::Cl100k,
@@ -31,11 +34,11 @@ impl Splitter {
         })
     }
 
-    pub fn regex(pattern: &str) -> Result<Self, fancy_regex::Error> {
-        Ok(Splitter::Regex(Box::new(Regex::new(pattern)?)))
+    pub fn regex(pattern: &str) -> Result<Self, RegexError> {
+        Ok(Splitter::Regex(Box::new(Regex::new(pattern).map_err(Box::new)?)))
     }
 
-    pub fn split<'a>(&self, text: &'a str) -> Result<Vec<&'a str>, fancy_regex::Error> {
+    pub fn split<'a>(&self, text: &'a str) -> Result<Vec<&'a str>, RegexError> {
         let mut out = Vec::new();
         self.for_each(text, |piece| out.push(piece))?;
         Ok(out)
@@ -47,7 +50,7 @@ impl Splitter {
         &self,
         text: &'a str,
         mut f: impl FnMut(&'a str),
-    ) -> Result<(), fancy_regex::Error> {
+    ) -> Result<(), RegexError> {
         match self {
             Splitter::Cl100k => cl100k::for_each(text, f),
             Splitter::O200k => o200k::for_each(text, f),
@@ -58,7 +61,7 @@ impl Splitter {
             }
             Splitter::Regex(re) => {
                 for m in re.find_iter(text) {
-                    let m = m?;
+                    let m = m.map_err(Box::new)?;
                     if !m.as_str().is_empty() {
                         f(m.as_str());
                     }

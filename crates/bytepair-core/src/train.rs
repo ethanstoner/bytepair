@@ -12,7 +12,7 @@ use rayon::prelude::*;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::bpe::key;
-use crate::pretokenize::Splitter;
+use crate::pretokenize::{RegexError, Splitter};
 
 fn unkey(k: u64) -> (u32, u32) {
     ((k >> 32) as u32, k as u32)
@@ -145,7 +145,7 @@ pub fn train_from_text(
     text: &str,
     pattern: Option<&str>,
     vocab_size: usize,
-) -> Result<Vec<(u32, u32)>, fancy_regex::Error> {
+) -> Result<Vec<(u32, u32)>, RegexError> {
     let splitter = Splitter::for_pattern(pattern)?;
     let mut by_str: FxHashMap<&str, u64> = FxHashMap::default();
     splitter.for_each(text, |chunk| *by_str.entry(chunk).or_insert(0) += 1)?;
