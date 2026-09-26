@@ -1,0 +1,8 @@
+venv/
+temp/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+*.model
+*.vocab
+PROJECT_STATUS.md
