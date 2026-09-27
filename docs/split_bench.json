@@ -1,0 +1,13 @@
+{
+  "corpus_mb": 11.37,
+  "cl100k": {
+    "hand_written_mb_s": 385.9,
+    "fancy_regex_mb_s": 24.9,
+    "speedup": 15.51
+  },
+  "o200k": {
+    "hand_written_mb_s": 267.9,
+    "fancy_regex_mb_s": 13.4,
+    "speedup": 19.95
+  }
+}

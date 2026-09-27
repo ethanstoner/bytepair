@@ -1,5 +1,5 @@
 {
-  "n_random": 300000,
+  "n_random": 1000000,
   "seed": 0,
   "corpus_files": [
     "code_python_stdlib.txt",
@@ -17,20 +17,20 @@
   "measured_at": "2026-09-26",
   "encodings": {
     "cl100k_base": {
-      "random": 300000,
-      "random_python": 6000,
-      "with_specials": 30000,
+      "random": 1000000,
+      "random_python": 20000,
+      "with_specials": 100000,
       "corpus_lines": 210967,
       "mismatches": 0,
-      "seconds": 13.7
+      "seconds": 18.7
     },
     "o200k_base": {
-      "random": 300000,
-      "random_python": 6000,
-      "with_specials": 30000,
+      "random": 1000000,
+      "random_python": 20000,
+      "with_specials": 100000,
       "corpus_lines": 210967,
       "mismatches": 0,
-      "seconds": 9.2
+      "seconds": 17.7
     }
   }
 }

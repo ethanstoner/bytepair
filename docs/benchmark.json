@@ -12,22 +12,22 @@
       "single": {
         "encode_mb_per_s": {
           "cl100k_base": {
-            "tiktoken": 10.6,
-            "hf_tokenizers_batch_of_lines": 1.71,
-            "bytepair_rust_cold": 22.21,
-            "bytepair_rust_warm": 38.18,
-            "bytepair_python_cold": 2.45,
-            "bytepair_python_warm": 7.59,
-            "bytepair_python_textbook_cold": 1.03
+            "tiktoken": 20.5,
+            "hf_tokenizers_batch_of_lines": 2.15,
+            "bytepair_rust_cold": 34.11,
+            "bytepair_rust_warm": 55.89,
+            "bytepair_python_cold": 3.11,
+            "bytepair_python_warm": 8.14,
+            "bytepair_python_textbook_cold": 1.36
           },
           "o200k_base": {
-            "tiktoken": 16.53,
-            "hf_tokenizers_batch_of_lines": 2.0,
-            "bytepair_rust_cold": 28.93,
-            "bytepair_rust_warm": 59.58,
-            "bytepair_python_cold": 2.4,
-            "bytepair_python_warm": 6.43,
-            "bytepair_python_textbook_cold": 0.56
+            "tiktoken": 18.4,
+            "hf_tokenizers_batch_of_lines": 2.12,
+            "bytepair_rust_cold": 32.8,
+            "bytepair_rust_warm": 54.52,
+            "bytepair_python_cold": 2.65,
+            "bytepair_python_warm": 7.25,
+            "bytepair_python_textbook_cold": 0.94
           }
         },
         "train": [
@@ -35,22 +35,22 @@
             "name": "pride_1024",
             "train_bytes": 752442,
             "vocab_size": 1024,
-            "bytepair_rust_s": 0.129,
+            "bytepair_rust_s": 0.023,
             "bytepair_bytes_per_token": 2.968,
-            "bytepair_python_s": 0.78,
-            "hf_tokenizers_s": 1.466,
+            "bytepair_python_s": 0.39,
+            "hf_tokenizers_s": 0.284,
             "hf_bytes_per_token": 2.968,
-            "bytepair_python_naive_s": 52.67,
-            "minbpe_s": 223.24
+            "bytepair_python_naive_s": 19.25,
+            "minbpe_s": 135.04
           },
           {
             "name": "corpus_8192",
             "train_bytes": 11371133,
             "vocab_size": 8192,
-            "bytepair_rust_s": 3.964,
+            "bytepair_rust_s": 1.429,
             "bytepair_bytes_per_token": 3.337,
-            "bytepair_python_s": 38.69,
-            "hf_tokenizers_s": 9.074,
+            "bytepair_python_s": 27.09,
+            "hf_tokenizers_s": 6.982,
             "hf_bytes_per_token": 3.352
           }
         ]
@@ -58,21 +58,160 @@
       "multi": {
         "threads": 32,
         "encode_mb_per_s": {
+          "documents": 137,
           "cl100k_base": {
-            "tiktoken_batch": 1.22,
-            "hf_tokenizers_batch": 12.29,
-            "bytepair_rust_batch": 31.21
+            "tiktoken_batch": 102.32,
+            "hf_tokenizers_batch": 25.63,
+            "bytepair_rust_batch": 84.68
           },
           "o200k_base": {
-            "tiktoken_batch": 1.23,
-            "hf_tokenizers_batch": 12.89,
-            "bytepair_rust_batch": 37.42
+            "tiktoken_batch": 100.7,
+            "hf_tokenizers_batch": 20.68,
+            "bytepair_rust_batch": 119.95
           }
         },
         "train": {
           "name": "corpus_8192",
-          "bytepair_rust_parallel_s": 3.968,
-          "hf_tokenizers_parallel_s": 18.597
+          "bytepair_rust_parallel_s": 1.779,
+          "hf_tokenizers_parallel_s": 7.465
+        }
+      }
+    },
+    {
+      "single": {
+        "encode_mb_per_s": {
+          "cl100k_base": {
+            "tiktoken": 20.46,
+            "hf_tokenizers_batch_of_lines": 2.13,
+            "bytepair_rust_cold": 32.29,
+            "bytepair_rust_warm": 53.93,
+            "bytepair_python_cold": 3.13,
+            "bytepair_python_warm": 8.41,
+            "bytepair_python_textbook_cold": 1.12
+          },
+          "o200k_base": {
+            "tiktoken": 19.33,
+            "hf_tokenizers_batch_of_lines": 2.12,
+            "bytepair_rust_cold": 30.05,
+            "bytepair_rust_warm": 51.7,
+            "bytepair_python_cold": 2.77,
+            "bytepair_python_warm": 6.91,
+            "bytepair_python_textbook_cold": 1.49
+          }
+        },
+        "train": [
+          {
+            "name": "pride_1024",
+            "train_bytes": 752442,
+            "vocab_size": 1024,
+            "bytepair_rust_s": 0.017,
+            "bytepair_bytes_per_token": 2.968,
+            "bytepair_python_s": 0.27,
+            "hf_tokenizers_s": 0.198,
+            "hf_bytes_per_token": 2.968,
+            "bytepair_python_naive_s": 16.16,
+            "minbpe_s": 121.42
+          },
+          {
+            "name": "corpus_8192",
+            "train_bytes": 11371133,
+            "vocab_size": 8192,
+            "bytepair_rust_s": 1.581,
+            "bytepair_bytes_per_token": 3.337,
+            "bytepair_python_s": 20.19,
+            "hf_tokenizers_s": 5.019,
+            "hf_bytes_per_token": 3.352
+          }
+        ]
+      },
+      "multi": {
+        "threads": 32,
+        "encode_mb_per_s": {
+          "documents": 137,
+          "cl100k_base": {
+            "tiktoken_batch": 103.64,
+            "hf_tokenizers_batch": 23.18,
+            "bytepair_rust_batch": 123.17
+          },
+          "o200k_base": {
+            "tiktoken_batch": 119.79,
+            "hf_tokenizers_batch": 23.3,
+            "bytepair_rust_batch": 156.48
+          }
+        },
+        "train": {
+          "name": "corpus_8192",
+          "bytepair_rust_parallel_s": 1.581,
+          "hf_tokenizers_parallel_s": 5.775
+        }
+      }
+    },
+    {
+      "single": {
+        "encode_mb_per_s": {
+          "cl100k_base": {
+            "tiktoken": 20.52,
+            "hf_tokenizers_batch_of_lines": 3.22,
+            "bytepair_rust_cold": 45.22,
+            "bytepair_rust_warm": 69.43,
+            "bytepair_python_cold": 4.67,
+            "bytepair_python_warm": 12.87,
+            "bytepair_python_textbook_cold": 1.8
+          },
+          "o200k_base": {
+            "tiktoken": 25.61,
+            "hf_tokenizers_batch_of_lines": 3.11,
+            "bytepair_rust_cold": 40.36,
+            "bytepair_rust_warm": 67.53,
+            "bytepair_python_cold": 4.09,
+            "bytepair_python_warm": 10.56,
+            "bytepair_python_textbook_cold": 1.49
+          }
+        },
+        "train": [
+          {
+            "name": "pride_1024",
+            "train_bytes": 752442,
+            "vocab_size": 1024,
+            "bytepair_rust_s": 0.017,
+            "bytepair_bytes_per_token": 2.968,
+            "bytepair_python_s": 0.25,
+            "hf_tokenizers_s": 0.336,
+            "hf_bytes_per_token": 2.968,
+            "bytepair_python_naive_s": 15.62,
+            "minbpe_s": 121.15
+          },
+          {
+            "name": "corpus_8192",
+            "train_bytes": 11371133,
+            "vocab_size": 8192,
+            "bytepair_rust_s": 1.599,
+            "bytepair_bytes_per_token": 3.337,
+            "bytepair_python_s": 20.81,
+            "hf_tokenizers_s": 5.197,
+            "hf_bytes_per_token": 3.352
+          }
+        ]
+      },
+      "multi": {
+        "threads": 32,
+        "encode_mb_per_s": {
+          "documents": 137,
+          "cl100k_base": {
+            "tiktoken_batch": 99.08,
+            "hf_tokenizers_batch": 23.66,
+            "bytepair_rust_batch": 97.07
+          },
+          "o200k_base": {
+            "tiktoken_batch": 117.89,
+            "hf_tokenizers_batch": 21.92,
+            "bytepair_rust_batch": 148.17
+          }
+        },
+        "train": {
+          "name": "corpus_8192",
+          "bytepair_rust_parallel_s": 1.67,
+          "hf_tokenizers_parallel_s": 5.754
         }
       }
     }
