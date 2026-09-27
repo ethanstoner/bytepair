@@ -10,3 +10,5 @@ docs/superpowers/
 target/
 *.pyd
 *.so
+.env
+.env.*
