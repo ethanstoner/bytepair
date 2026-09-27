@@ -14,7 +14,7 @@
     "ja_rashomon.txt",
     "zh_hongloumeng.txt"
   ],
-  "measured_at": "2026-09-26",
+  "measured_at": "2026-09-27",
   "encodings": {
     "cl100k_base": {
       "random": 1000000,
@@ -22,7 +22,7 @@
       "with_specials": 100000,
       "corpus_lines": 210967,
       "mismatches": 0,
-      "seconds": 18.7
+      "seconds": 27.7
     },
     "o200k_base": {
       "random": 1000000,
@@ -30,7 +30,7 @@
       "with_specials": 100000,
       "corpus_lines": 210967,
       "mismatches": 0,
-      "seconds": 17.7
+      "seconds": 26.3
     }
   }
 }
