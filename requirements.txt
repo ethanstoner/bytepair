@@ -1,3 +1,4 @@
 regex
 tiktoken
 pytest
+matplotlib

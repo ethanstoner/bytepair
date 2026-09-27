@@ -11,7 +11,7 @@ dependencies = ["regex"]
 
 [project.optional-dependencies]
 tiktoken = ["tiktoken"]
-dev = ["tiktoken", "tokenizers", "pytest", "maturin"]
+dev = ["tiktoken", "tokenizers", "pytest", "maturin", "matplotlib"]
 
 [project.scripts]
 bytepair = "bytepair.cli:main"
