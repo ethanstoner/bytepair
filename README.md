@@ -2,16 +2,16 @@
 
 A byte-level BPE tokenizer with a Rust engine and a readable pure-Python reference. Both produce identical output. It rebuilds OpenAI's `cl100k_base` (GPT-4) and `o200k_base` (GPT-4o) from their published ranks, matches tiktoken token for token, and encodes faster than tiktoken on one thread.
 
-```text
-                      single-thread encode, 11.4 MB corpus (MB/s, 3 runs)
-bytepair (Rust)       ███████████████████████████████████  32.3-45.2
-tiktoken              ████████████████████                  20.5
-HF tokenizers         ███                                    2.1-3.2
-                      identical output to tiktoken: 4,067,838 tokens, 0 mismatches
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/results-dark.png">
+  <source media="(prefers-color-scheme: light)" srcset="docs/results-light.png">
+  <img alt="Single-thread cl100k_base encode: bytepair (Rust) 32.3-45.2 MB/s, tiktoken 20.5, HF tokenizers 2.1-3.2. Training on 11.4 MB to vocab 8192: bytepair (Rust) 1.4-1.6 s, HF tokenizers 5.0-7.0 s." src="docs/results-light.png">
+</picture>
+
+Output is identical to tiktoken: 4,067,838 cl100k_base tokens on the 11.4 MB corpus, 0 mismatches.
 
 ### Highlights
-- **1.6-2.2x faster than tiktoken** encoding cl100k_base on one thread, and 1.55-1.8x on o200k_base. The output is byte-identical: 7.46M tokens over 11.4 MB, 0 mismatches.
+- **1.6-2.2x faster than tiktoken** encoding cl100k_base on one thread, and 1.55-1.8x on o200k_base. The output is byte-identical: 7.46M tokens across both encodings (4.07M cl100k + 3.39M o200k) over 11.4 MB, 0 mismatches.
 - **3.2-4.9x faster BPE training than HF `tokenizers`**, single-threaded: 1.43-1.60 s vs 5.0-7.0 s on 11.4 MB at vocab 8192. It learns exactly the same merges as the pure-Python reference.
 - **Hand-written pre-tokenizers 15.5x (cl100k) and 20x (o200k) faster than the regex engine** they replace, verified equal on the whole corpus, 1M fuzz strings and property tests.
 - **Found a real divergence:** HF `tokenizers` ports of cl100k/o200k turn a literal `<|endoftext|>` in untrusted user text into the real control token. tiktoken refuses it by default, and so does bytepair.
@@ -99,7 +99,7 @@ Three caveats:
 | Splitters vs fancy-regex | 20,000 property-test strings per pattern; whole corpus in `split_bench` | 0 mismatches |
 | Rust trainer vs Python trainer | 11.4 MB at vocab 8192 (7,936 merges), random Unicode text, 4 split patterns | identical merges |
 
-As a negative control, an injected one-character bug is caught by the fuzz within 4 strings and shrunk to that character.
+As a negative control, an injected one-character bug is caught by the fuzz and shrunk to that character.
 
 ### Compression (UTF-8 bytes per token, higher is better)
 
@@ -126,7 +126,7 @@ o200k's larger vocabulary barely changes English or code. It needs 30% fewer tok
   - a lazily invalidated max-heap
   - smallest-pair tie-breaking
 
-  Per merge, only chunks containing that pair are revisited. Profiling showed the early merges touch hundreds of thousands of chunks, so Rust diffs sorted pair buffers instead of building hash maps per chunk. That cut training time by about 30% in a before/after profiling run.
+  Per merge, only chunks containing that pair are revisited. Profiling showed the early merges touch hundreds of thousands of chunks, so Rust diffs sorted pair buffers instead of building hash maps per chunk.
 - **Rank-array merging.** Adjacent-pair ranks are kept in an array. Each step merges the leftmost lowest-ranked pair and re-ranks only its neighbours. In Python this is 1.9-2.8x faster than the textbook recount loop. It relies on one invariant: a merge's id is its rank, and anything built on it ranks later.
 - **Parallel batch encoding.** It releases the GIL and gives each rayon worker a private chunk cache. Benchmark batches are ~64 KB documents: tiktoken's batch API schedules one thread-pool task per item, so single lines would measure task overhead rather than encoding.
 - **Special tokens handled like tiktoken:**
@@ -154,7 +154,7 @@ crates/bytepair-core/   Rust: chars (Unicode classes), pretokenize/{cl100k,o200k
                         encoder (Encoder, specials, cache, batch), train
 crates/bytepair-py/     PyO3 module bytepair._core
 src/bytepair/           Python package: backend switch + the pure-Python reference
-scripts/                fetch_corpus, parity, fuzz, benchmark, summarize, build.sh
+scripts/                fetch_corpus, parity, fuzz, benchmark, summarize, plot_results, build.sh
 ```
 
 ## Getting Started
@@ -189,6 +189,7 @@ git clone --depth 1 https://github.com/karpathy/minbpe temp/minbpe
 python scripts/benchmark.py 3      # docs/benchmark.json
 cargo run --release -p bytepair-core --example split_bench -- temp/corpus > docs/split_bench.json
 python scripts/summarize.py        # the tables above, from the JSON
+python scripts/plot_results.py     # docs/results-{light,dark}.png (needs matplotlib)
 ```
 
 ## Testing
