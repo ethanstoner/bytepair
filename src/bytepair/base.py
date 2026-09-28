@@ -1,6 +1,7 @@
 """Shared encode/decode, special-token handling and save/load."""
 
 import json
+import pathlib
 
 import regex
 
@@ -233,6 +234,7 @@ class Tokenizer:
 
     def save(self, prefix):
         """Write `prefix.model` (loadable) and `prefix.vocab` (for humans)."""
+        pathlib.Path(prefix).parent.mkdir(parents=True, exist_ok=True)
         with open(f"{prefix}.model", "w", encoding="utf-8") as f:
             f.write(FORMAT + "\n")
             f.write(json.dumps(self.pattern) + "\n")

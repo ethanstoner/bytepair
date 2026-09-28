@@ -86,6 +86,13 @@ def test_save_load_byte_tokenizer(tmp_path, backend):
     assert loaded.encode("the mat") == tok.encode("the mat")
 
 
+def test_save_creates_missing_directories(tmp_path, backend):
+    tok = ByteTokenizer(backend).train("the cat sat on the mat " * 20, 270)
+    tok.save(tmp_path / "new" / "dir" / "b")
+    assert (tmp_path / "new" / "dir" / "b.model").exists()
+    assert (tmp_path / "new" / "dir" / "b.vocab").exists()
+
+
 def test_special_token_modes(backend):
     tok = SplitTokenizer(backend=backend).train("hello world " * 50, 280)
     tok.register_special_tokens({"<|eot|>": 1000})
