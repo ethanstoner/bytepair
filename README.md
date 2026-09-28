@@ -162,9 +162,11 @@ scripts/                fetch_corpus, parity, fuzz, benchmark, summarize, plot_r
 You need Rust (stable) and Python 3.10+.
 
 ```bash
-python -m venv venv && source venv/bin/activate      # venv\Scripts\activate on Windows
+git clone https://github.com/ethanstoner/bytepair && cd bytepair
+python -m venv venv
+source venv/bin/activate                             # Windows (Git Bash): source venv/Scripts/activate
 pip install maturin pytest regex tiktoken tokenizers
-maturin develop --release                            # Windows without MSVC: scripts/build.sh
+maturin develop --release                            # builds bytepair._core into the venv
 
 bytepair train data/sample.txt --vocab-size 512 --out temp/mytok
 bytepair encode --model cl100k_base --text "hello world"          # [15339, 1917]
@@ -177,6 +179,15 @@ from bytepair import SplitTokenizer, Cl100kTokenizer
 tok = SplitTokenizer().train(open("data/sample.txt", encoding="utf-8").read(), vocab_size=1024)
 tok.save("temp/pride")                      # .model plus a human-readable .vocab
 Cl100kTokenizer().encode("hello world")     # backend="auto": Rust if built, else Python
+```
+
+The cl100k/o200k loaders fetch OpenAI's rank files through tiktoken, so the first use needs network access.
+
+On Windows without the MSVC build tools, build with the GNU toolchain instead. `scripts/build.sh` expects the venv at `./venv` and runs from Git Bash:
+
+```bash
+rustup toolchain install stable-x86_64-pc-windows-gnu
+bash scripts/build.sh
 ```
 
 To reproduce the results (on an idle machine):
@@ -194,7 +205,7 @@ python scripts/plot_results.py     # docs/results-{light,dark}.png (needs matplo
 
 ## Testing
 
-`pytest` runs 136 tests, most of them against both backends:
+`python -m pytest` runs 138 tests, most of them against both backends:
 - tiktoken parity on edge cases and the sample
 - splitters vs `regex.findall`
 - Rust vs Python trainer merges
@@ -204,7 +215,7 @@ python scripts/plot_results.py     # docs/results-{light,dark}.png (needs matplo
 - the `auto` fallback
 - the CLI
 
-`cargo test -p bytepair-core` runs 13 Rust tests, including property tests of both splitters against fancy-regex and of the trainer against a naive recount. CI (GitHub Actions, Linux) runs clippy with `-D warnings`, both test suites and a 100k-string fuzz.
+`cargo test -p bytepair-core --release` runs 13 Rust tests, including property tests of both splitters against fancy-regex and of the trainer against a naive recount. Use `--release`: the property tests take about a minute optimised and several minutes in a debug build. CI (GitHub Actions, Linux) runs clippy with `-D warnings`, both test suites and a 100k-string fuzz.
 
 ## What I Learned
 
@@ -214,4 +225,4 @@ python scripts/plot_results.py     # docs/results-{light,dark}.png (needs matplo
 
 ## License
 
-MIT
+MIT, see [LICENSE](LICENSE). `data/sample.txt` is the first 150,000 characters of *Pride and Prejudice* from Project Gutenberg (public domain in the US), with the Gutenberg header and footer removed.
