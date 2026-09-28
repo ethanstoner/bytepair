@@ -6,6 +6,9 @@ build-backend = "maturin"
 name = "bytepair"
 version = "0.1.0"
 description = "Byte-level BPE tokenizers, trained from scratch and verified against tiktoken"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Ethan Stoner" }]
 requires-python = ">=3.10"
 dependencies = ["regex"]
 
